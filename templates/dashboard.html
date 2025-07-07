@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitoramento de Migração DNS</title>
+    <meta http-equiv="refresh" content="25">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --cis: #0062ff;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --config: #3498db;
+            --urls: #27ae60;
+            --history: #8e44ad;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header h1 i {
+            font-size: 1.5em;
+        }
+        
+        .cis-info {
+            background: rgba(0, 98, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .header-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .nav-button {
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        .nav-button.config {
+            background-color: var(--config);
+        }
+        
+        .nav-button.urls {
+            background-color: var(--urls);
+        }
+        
+        .nav-button.history {
+            background-color: var(--history);
+        }
+        
+        .refresh-info {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card h2 {
+            font-size: 2.5rem;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .stat-card p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        
+        .stat-total { background: linear-gradient(135deg, var(--primary), #34495e); }
+        .stat-ok { background: linear-gradient(135deg, var(--success), #27ae60); }
+        .stat-not-ok { background: linear-gradient(135deg, var(--danger), #c0392b); }
+        .stat-errors { background: linear-gradient(135deg, var(--warning), #d35400); }
+        .stat-migrated { background: linear-gradient(135deg, var(--cis), #0048cc); }
+        
+        .summary {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .summary-content {
+            flex: 1;
+        }
+        
+        .summary p {
+            margin: 5px 0;
+            font-size: 1.1rem;
+        }
+        
+        .summary strong {
+            color: var(--primary);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        .badge-ok {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .badge-cis {
+            background-color: var(--cis);
+            color: white;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .status-ok {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+        
+        .status-error, .status-out {
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: bold;
+        }
+        
+        .ip-changed { 
+            background-color: #fff3cd;
+            color: #856404;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { background-color: #fff3cd; }
+            50% { background-color: #ffeeba; }
+            100% { background-color: #fff3cd; }
+        }
+        
+        .cis-migrated {
+            background-color: #d4f1f4;
+            color: #0062ff;
+            font-weight: bold;
+        }
+        
+        .cis-not-migrated {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .ssl-present { background-color: #d4edda; }
+        .ssl-missing { background-color: #f8d7da; }
+        .ssl-na { background-color: #e2e3e5; }
+        
+        .timestamp {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .badge-ok {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .badge-out {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .badge-error {
+            background-color: var(--warning);
+            color: #333;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 10px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .site-out {
+            background-color: #fff5f5 !important;
+            animation: pulse-out 2s infinite;
+        }
+        
+        @keyframes pulse-out {
+            0% { background-color: #fff5f5; }
+            50% { background-color: #ffebee; }
+            100% { background-color: #fff5f5; }
+        }
+        
+        .countdown {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .cis-badge {
+            background-color: var(--cis);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        
+        .dns-disabled {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .alert-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert p {
+            margin: 5px 0 0;
+            font-size: 1rem;
+        }
+        
+        .alert-icon {
+            font-size: 1.8rem;
+            margin-right: 15px;
+        }
+        
+        .migration-alert {
+            background: linear-gradient(135deg, #0062ff, #0048cc);
+        }
+        
+        .problem-alert {
+            background: linear-gradient(135deg, #ff6b6b, #e74c3c);
+        }
+    </style>
+    <script>
+        let countdown = 24;
+        function updateCountdown() {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            if (countdown <= 0) {
+                countdown = 25;
+            }
+            setTimeout(updateCountdown, 1000);
+        }
+        
+        window.onload = function() {
+            updateCountdown();
+            highlightMigration();
+            highlightProblems();
+        };
+        
+        function highlightMigration() {
+            const migratedCount = {{ stats.migrated }};
+            const total = {{ stats.total }};
+            
+            if (migratedCount > 0) {
+                document.getElementById('migration-count').textContent = migratedCount;
+                document.getElementById('migration-alert').style.display = 'flex';
+            }
+        }
+        
+        function highlightProblems() {
+            const notOkCount = {{ stats.not_ok }};
+            const errorCount = {{ stats.errors }};
+            const totalProblems = notOkCount + errorCount;
+            
+            if (totalProblems > 0) {
+                document.getElementById('problem-count').textContent = totalProblems;
+                document.getElementById('problem-alert').style.display = 'flex';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-info">
+            <h1><i class="fas fa-exchange-alt"></i> Monitoramento de Migração DNS</h1>
+            <div class="cis-info">
+                <i class="fas fa-cloud"></i> Nameservers IBM CIS: {{ cis_nameservers }}
+            </div>
+        </div>
+        <div class="header-buttons">
+            <a href="/urls" target="_blank" class="nav-button urls">
+                <i class="fas fa-link"></i> URLs
+            </a>
+            <a href="/config" target="_blank" class="nav-button config">
+                <i class="fas fa-cogs"></i> Config
+            </a>
+            <a href="/historico" target="_blank" class="nav-button history">
+                <i class="fas fa-history"></i> Histórico
+            </a>
+            <div class="refresh-info">
+                <i class="fas fa-sync-alt"></i> Atualizando em: <span class="countdown" id="countdown">25</span> segundos
+            </div>
+        </div>
+    </div>
+    
+    <div class="alert-container">
+        <div id="migration-alert" class="alert migration-alert" style="display: none;">
+            <div class="alert-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="alert-content">
+                <h3><span id="migration-count">0</span> DOMÍNIOS MIGRADOS PARA IBM CIS</h3>
+                <p>Parabéns! Estes domínios já estão com os nameservers atualizados</p>
+            </div>
+            <div>
+                <i class="fas fa-arrow-down" style="font-size: 1.5rem;"></i>
+            </div>
+        </div>
+        
+        <div id="problem-alert" class="alert problem-alert" style="display: none;">
+            <div class="alert-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert-content">
+                <h3>ATENÇÃO: <span id="problem-count">0</span> SITES COM PROBLEMAS</h3>
+                <p>Verifique os sites destacados em vermelho na tabela abaixo</p>
+            </div>
+            <div>
+                <i class="fas fa-arrow-down" style="font-size: 1.5rem;"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stat-card stat-total">
+            <h2>{{ stats.total }}</h2>
+            <p><i class="fas fa-link"></i> Sites Monitorados</p>
+        </div>
+        <div class="stat-card stat-ok">
+            <h2>{{ stats.ok }}</h2>
+            <p><i class="fas fa-check-circle"></i> Sites Funcionando</p>
+        </div>
+        <div class="stat-card stat-not-ok">
+            <h2>{{ stats.not_ok }}</h2>
+            <p><i class="fas fa-exclamation-triangle"></i> Sites Fora</p>
+        </div>
+        <div class="stat-card stat-errors">
+            <h2>{{ stats.errors }}</h2>
+            <p><i class="fas fa-bug"></i> Erros de Verificação</p>
+        </div>
+        <div class="stat-card stat-migrated">
+            <h2>{{ stats.migrated }}</h2>
+            <p><i class="fas fa-cloud-upload-alt"></i> DNS Migrados</p>
+        </div>
+    </div>
+    
+    <div class="summary">
+        <div class="summary-content">
+            <p><strong>Status Geral:</strong> 
+                <span class="status-badge badge-ok">{{ stats.percentage_ok }}% Operacional</span>
+                <span class="status-badge badge-cis">{{ stats.percentage_migrated }}% Migrados</span>
+            </p>
+            <p><strong>Sites Funcionando:</strong> {{ stats.ok }} | 
+            <strong>Sites Fora:</strong> {{ stats.not_ok }} | 
+            <strong>Erros:</strong> {{ stats.errors }} |
+            <strong>Migrados:</strong> {{ stats.migrated }}</p>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>URL</th>
+                <th>Domínio</th>
+                <th>IP</th>
+                <th>Acessível</th>
+                <th>Certificado</th>
+                <th>Nameservers</th>
+                <th>IBM CIS</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in results %}
+            <tr class="{% if item.status == 'FORA' or item.status == 'ERRO' %}site-out{% endif %}">
+                <td>{{ item.url }}</td>
+                <td>{{ item.domain }}</td>
+                <td class="{% if item.ip_changed %}ip-changed{% endif %}">
+                    {{ item.ip }}
+                    {% if item.ip_changed %}<i class="fas fa-exchange-alt"></i>{% endif %}
+                </td>
+                <td class="{{ 'status-ok' if item.accessible else 'status-out' }}">
+                    {% if item.accessible %}
+                        <i class="fas fa-check"></i> Sim
+                    {% else %}
+                        <i class="fas fa-times"></i> Não
+                    {% endif %}
+                </td>
+                <td class="
+                    {% if item.ssl_present %}ssl-present
+                    {% elif item.ssl_present == False and item.url.startswith('https') %}ssl-missing
+                    {% else %}ssl-na
+                    {% endif %}
+                ">
+                    {% if item.url.startswith('https') %}
+                        {% if item.ssl_present %}
+                            <i class="fas fa-lock"></i> Presente
+                        {% else %}
+                            <i class="fas fa-unlock"></i> Ausente
+                        {% endif %}
+                    {% else %}
+                        <i class="fas fa-globe"></i> HTTP
+                    {% endif %}
+                </td>
+                <td>
+                    {% if dns_enabled %}
+                        {{ item.nameservers }}
+                    {% else %}
+                        <span class="dns-disabled">
+                            <i class="fas fa-exclamation-triangle"></i> DNS não habilitado
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="{% if item.cis_migrated %}cis-migrated{% else %}cis-not-migrated{% endif %}">
+                    {% if dns_enabled %}
+                        {% if item.cis_migrated %}
+                            <i class="fas fa-check-circle"></i> Sim
+                        {% else %}
+                            <i class="fas fa-times-circle"></i> Não
+                        {% endif %}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.status == 'OK' %}
+                        <span class="status-badge badge-ok"><i class="fas fa-check"></i> OK</span>
+                    {% elif item.status == 'FORA' %}
+                        <span class="status-badge badge-out"><i class="fas fa-times"></i> FORA</span>
+                    {% else %}
+                        <span class="status-badge badge-error"><i class="fas fa-exclamation-triangle"></i> ERRO</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="timestamp">
+        <i class="fas fa-clock"></i> Última atualização: {{ timestamp }} | Próxima atualização em: <span class="countdown">25</span> segundos
+    </div>
+    
+    <div class="footer">
+        Sistema de Monitoramento de Migração DNS | IBM CIS | Atualizações a cada 25 segundos <br>
+        desenvolvido por O7cloud
+    </div>
+</body>
+</html>
