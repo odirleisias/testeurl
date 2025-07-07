@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Histórico de Monitoramento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header h1 i {
+            font-size: 1.5em;
+        }
+        
+        .section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            color: #2c3e50;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-history"></i> Histórico de Monitoramento</h1>
+        <div>
+            <a href="/" style="color: white; text-decoration: none;">
+                <i class="fas fa-home"></i> Voltar para o Dashboard
+            </a>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title"><i class="fas fa-exchange-alt"></i> Mudanças de IP</h2>
+        {% if ip_changes %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Domínio</th>
+                    <th>IP Antigo</th>
+                    <th>IP Novo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for change in ip_changes %}
+                <tr>
+                    <td>{{ change.timestamp }}</td>
+                    <td>{{ change.domain }}</td>
+                    <td>{{ change.old_ip }}</td>
+                    <td>{{ change.new_ip }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Nenhuma mudança de IP registrada.</p>
+        {% endif %}
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title"><i class="fas fa-server"></i> Mudanças de Nameservers</h2>
+        {% if ns_changes %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Domínio</th>
+                    <th>Nameservers Antigos</th>
+                    <th>Nameservers Novos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for change in ns_changes %}
+                <tr>
+                    <td>{{ change.timestamp }}</td>
+                    <td>{{ change.domain }}</td>
+                    <td>{{ change.old_ns }}</td>
+                    <td>{{ change.new_ns }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Nenhuma mudança de Nameservers registrada.</p>
+        {% endif %}
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Histórico de Quedas</h2>
+        {% if downtimes %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Domínio</th>
+                    <th>Início</th>
+                    <th>Fim</th>
+                    <th>Duração (segundos)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for downtime in downtimes %}
+                <tr>
+                    <td>{{ downtime.domain }}</td>
+                    <td>{{ downtime.start }}</td>
+                    <td>{{ downtime.end }}</td>
+                    <td>{{ downtime.duration_seconds }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Nenhum registro de queda.</p>
+        {% endif %}
+    </div>
+    
+    <div class="footer">
+        Sistema de Monitoramento de Migração DNS | IBM CIS <br>
+        desenvolvido por O7cloud
+    </div>
+</body>
+</html>
