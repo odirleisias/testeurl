@@ -48,6 +48,9 @@
             border-bottom: 2px solid #2c3e50;
             padding-bottom: 10px;
             margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         table {
@@ -78,6 +81,33 @@
             color: #7f8c8d;
             font-size: 0.9rem;
         }
+        
+        .btn-clear {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-clear:hover {
+            background-color: #c0392b;
+        }
+        
+        .proxy-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .proxy-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +118,45 @@
                 <i class="fas fa-home"></i> Voltar para o Dashboard
             </a>
         </div>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title">
+            <span><i class="fas fa-exchange-alt"></i> Mudanças de Proxy CIS</span>
+            <form method="POST" action="/clear-logs" style="display: inline;">
+                <button type="submit" class="btn-clear">
+                    <i class="fas fa-trash"></i> Limpar Todo o Histórico
+                </button>
+            </form>
+        </h2>
+        {% if proxy_changes %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Domínio</th>
+                    <th>Estado Anterior</th>
+                    <th>Novo Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for change in proxy_changes %}
+                <tr>
+                    <td>{{ change.timestamp }}</td>
+                    <td>{{ change.domain }}</td>
+                    <td class="{% if change.previous_state == 'Ativado' %}proxy-active{% else %}proxy-inactive{% endif %}">
+                        {{ change.previous_state }}
+                    </td>
+                    <td class="{% if change.new_state == 'Ativado' %}proxy-active{% else %}proxy-inactive{% endif %}">
+                        {{ change.new_state }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Nenhuma mudança de proxy registrada.</p>
+        {% endif %}
     </div>
     
     <div class="section">
