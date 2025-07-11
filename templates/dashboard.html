@@ -235,19 +235,6 @@
             font-weight: bold;
         }
         
-        .ip-changed { 
-            background-color: #fff3cd;
-            color: #856404;
-            font-weight: bold;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { background-color: #fff3cd; }
-            50% { background-color: #ffeeba; }
-            100% { background-color: #fff3cd; }
-        }
-        
         .cis-migrated {
             background-color: #d4f1f4;
             color: #0062ff;
@@ -535,9 +522,7 @@
             <tr class="{% if item.status == 'FORA' or item.status == 'ERRO' %}site-out{% endif %}">
                 <td>{{ item.url }}</td>
                 <td>{{ item.domain }}</td>
-                <td class="{% if item.ip_changed %}ip-changed{% endif %}">
-                    {{ item.ip }}
-                </td>
+                <td>{{ item.ip }}</td>
                 <td class="{{ 'status-ok' if item.accessible else 'status-out' }}">
                     {% if item.accessible %}
                         <i class="fas fa-check"></i> Sim
