@@ -16,6 +16,8 @@
             --config: #3498db;
             --urls: #27ae60;
             --history: #8e44ad;
+            --proxy-active: #27ae60;
+            --proxy-inactive: #e74c3c;
         }
         
         body {
@@ -316,15 +318,6 @@
             text-align: center;
         }
         
-        .cis-badge {
-            background-color: var(--cis);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-        
         .dns-disabled {
             color: #dc3545;
             font-weight: bold;
@@ -372,6 +365,28 @@
         
         .problem-alert {
             background: linear-gradient(135deg, #ff6b6b, #e74c3c);
+        }
+        
+        .proxy-active {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+        
+        .proxy-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: bold;
+        }
+        
+        .proxy-changed {
+            animation: pulse-proxy 2s infinite;
+        }
+        
+        @keyframes pulse-proxy {
+            0% { background-color: #fff3cd; }
+            50% { background-color: #ffeeba; }
+            100% { background-color: #fff3cd; }
         }
     </style>
     <script>
@@ -511,6 +526,7 @@
                 <th>Certificado</th>
                 <th>Nameservers</th>
                 <th>IBM CIS</th>
+                <th>Proxy CIS</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -521,7 +537,6 @@
                 <td>{{ item.domain }}</td>
                 <td class="{% if item.ip_changed %}ip-changed{% endif %}">
                     {{ item.ip }}
-                    {% if item.ip_changed %}<i class="fas fa-exchange-alt"></i>{% endif %}
                 </td>
                 <td class="{{ 'status-ok' if item.accessible else 'status-out' }}">
                     {% if item.accessible %}
@@ -564,6 +579,16 @@
                         {% endif %}
                     {% else %}
                         N/A
+                    {% endif %}
+                </td>
+                <td class="{% if item.proxy_active %}proxy-active{% else %}proxy-inactive{% endif %} {% if item.proxy_changed %}proxy-changed{% endif %}">
+                    {% if item.proxy_active %}
+                        <i class="fas fa-check-circle"></i> Ativado
+                    {% else %}
+                        <i class="fas fa-times-circle"></i> Desativado
+                    {% endif %}
+                    {% if item.proxy_changed %}
+                        <i class="fas fa-exchange-alt"></i>
                     {% endif %}
                 </td>
                 <td>
