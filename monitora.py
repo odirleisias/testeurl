@@ -6,7 +6,7 @@ import time
 import csv
 import os
 import tldextract
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for
 from urllib.parse import urlparse
 from datetime import datetime
 
@@ -22,13 +22,10 @@ app = Flask(__name__)
 
 results_cache = {"timestamp": "", "results": [], "stats": {}}
 results_lock = threading.Lock()
-ip_history = {}
-ns_history = {}
 downtime_timer = {}
 proxy_state_history = {}  # Para rastrear o estado do proxy
 
 # Arquivos de configuração
-CSV_IP_LOG = 'log_ip_changes.csv'
 CSV_NS_LOG = 'log_ns_changes.csv'
 CSV_DOWNTIME_LOG = 'log_downtime.csv'
 CSV_PROXY_LOG = 'log_proxy_changes.csv'
@@ -68,7 +65,7 @@ def log_csv(filename, row, header=None):
         writer.writerow(row)
 
 def clear_logs():
-    logs = [CSV_IP_LOG, CSV_NS_LOG, CSV_DOWNTIME_LOG, CSV_PROXY_LOG]
+    logs = [CSV_NS_LOG, CSV_DOWNTIME_LOG, CSV_PROXY_LOG]
     for log in logs:
         if os.path.exists(log):
             os.remove(log)
@@ -169,20 +166,16 @@ def check_url(url):
                     "previous_state": "Ativado" if previous_state else "Desativado",
                     "new_state": "Ativado" if proxy_active else "Desativado"
                 }, header=["timestamp", "domain", "previous_state", "new_state"])
-        
-        proxy_state_history[domain] = proxy_active
-
-        # IP tracking (para histórico de IP, mas não usamos para proxy)
-        ip_changed = False
-        if domain in ip_history and ip_history[domain] != current_ip:
-            ip_changed = True
-            log_csv(CSV_IP_LOG, {
+        else:
+            # Primeira verificação - registrar estado inicial
+            log_csv(CSV_PROXY_LOG, {
                 "timestamp": now_str,
                 "domain": domain,
-                "old_ip": ip_history[domain],
-                "new_ip": current_ip
-            }, header=["timestamp", "domain", "old_ip", "new_ip"])
-        ip_history[domain] = current_ip
+                "previous_state": "N/A",
+                "new_state": "Ativado" if proxy_active else "Desativado"
+            }, header=["timestamp", "domain", "previous_state", "new_state"])
+        
+        proxy_state_history[domain] = proxy_active
 
         # NS tracking
         ns_changed = False
@@ -202,7 +195,7 @@ def check_url(url):
         # Disponibilidade
         accessible = check_website(full_url)
 
-        # Queda (downtime) - Corrigido para registrar corretamente
+        # Queda (downtime)
         if not accessible:
             if domain not in downtime_timer:
                 downtime_timer[domain] = time.time()
@@ -225,7 +218,6 @@ def check_url(url):
             "ip": current_ip,
             "accessible": accessible,
             "ssl_present": ssl_present,
-            "ip_changed": ip_changed,
             "ns_changed": ns_changed,
             "nameservers": ", ".join(nameservers),
             "cis_migrated": cis_migrated,
@@ -306,14 +298,12 @@ def historico():
             reader = csv.DictReader(f)
             return list(reader)
 
-    ip_changes = read_csv(CSV_IP_LOG)
     ns_changes = read_csv(CSV_NS_LOG)
     downtimes = read_csv(CSV_DOWNTIME_LOG)
     proxy_changes = read_csv(CSV_PROXY_LOG)
 
     return render_template(
         'historico.html',
-        ip_changes=ip_changes,
         ns_changes=ns_changes,
         downtimes=downtimes,
         proxy_changes=proxy_changes
@@ -373,6 +363,9 @@ def manage_urls():
     return render_template('urls.html', urls=urls)
 
 if __name__ == '__main__':
+    # Inicialização de variáveis
+    ns_history = {}
+    
     # Criar arquivos se não existirem
     if not os.path.exists(CIS_NAMESERVERS_FILE):
         save_cis_nameservers(["ns102.name.cloud.ibm.com", "ns173.name.cloud.ibm.com"])
